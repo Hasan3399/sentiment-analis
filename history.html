@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+
+{% block title %}Riwayat Analisis{% endblock %}
+
+{% block content %}
+<div class="container-fluid page-container">
+    <section class="hero-panel compact">
+        <div>
+            <span class="eyebrow">History</span>
+            <h1>Riwayat Analisis</h1>
+            <p>Semua hasil prediksi komentar dan dataset disimpan di database.</p>
+        </div>
+        <div class="hero-actions">
+            <a class="btn btn-primary-gradient" href="{{ url_for('export_excel') }}">Export Excel</a>
+            <a class="btn btn-outline-light" href="{{ url_for('export_pdf') }}">Export PDF</a>
+        </div>
+    </section>
+
+    <section class="panel">
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Waktu</th>
+                        <th>Text</th>
+                        <th>Sentimen</th>
+                        <th>Confidence</th>
+                        <th>Mode</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in pagination.items %}
+                    <tr>
+                        <td>{{ item.created_at.strftime('%d/%m/%Y %H:%M') }}</td>
+                        <td>{{ item.text }}</td>
+                        <td><span class="badge sentiment {{ item.sentiment|lower }}">{{ item.sentiment }}</span></td>
+                        <td>{{ item.confidence }}%</td>
+                        <td>{{ item.mode }}</td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="5" class="empty-cell">Belum ada riwayat analisis.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <nav class="pagination-nav">
+            {% if pagination.has_prev %}
+            <a class="btn btn-outline-light" href="{{ url_for('history', page=pagination.prev_num) }}">Prev</a>
+            {% endif %}
+            <span class="page-info">Halaman {{ pagination.page }} / {{ pagination.pages or 1 }}</span>
+            {% if pagination.has_next %}
+            <a class="btn btn-outline-light" href="{{ url_for('history', page=pagination.next_num) }}">Next</a>
+            {% endif %}
+        </nav>
+    </section>
+</div>
+{% endblock %}

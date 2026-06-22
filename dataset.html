@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{% block title %}Dataset CSV / Excel{% endblock %}
+
+{% block content %}
+<div class="container-fluid page-container">
+    <section class="hero-panel compact">
+        <div>
+            <span class="eyebrow">CSV / Excel Dataset Analysis</span>
+            <h1>Analisis Dataset CSV atau Excel</h1>
+            <p>Upload file CSV, XLSX, atau XLS dan sistem akan mendeteksi kolom komentar secara otomatis. Maksimal {{ max_analysis_rows }} baris diproses agar tetap bisa menangani dataset besar.</p>
+        </div>
+    </section>
+
+    <section class="content-grid split">
+        <div class="panel">
+            <form method="POST" enctype="multipart/form-data" class="upload-card">
+                <label class="form-label">File CSV / Excel</label>
+                <input type="file" class="form-control" name="file" accept=".csv,.xlsx,.xls" required>
+                <button class="btn btn-primary-gradient mt-3" type="submit">Upload dan Analisis</button>
+            </form>
+        </div>
+
+        <div class="panel">
+            <div class="panel-header">
+                <h2>Riwayat Upload</h2>
+            </div>
+            <div class="timeline">
+                {% for item in uploads %}
+                <a class="timeline-item link-card" href="{{ url_for('dataset_result', dataset_id=item.id) }}">
+                    <strong>{{ item.original_filename }}</strong>
+                    <span>{{ item.row_count }} baris · kolom {{ item.text_column }} · {{ item.created_at.strftime('%d/%m %H:%M') }}</span>
+                </a>
+                {% else %}
+                <div class="empty-state">Belum ada dataset CSV.</div>
+                {% endfor %}
+            </div>
+        </div>
+    </section>
+</div>
+{% endblock %}

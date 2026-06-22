@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+
+{% block title %}Insight{% endblock %}
+
+{% block content %}
+<div class="container-fluid page-container">
+    <section class="hero-panel compact">
+        <div>
+            <span class="eyebrow">Smart Insight</span>
+            <h1>Insight Sentimen</h1>
+            <p>Ringkasan otomatis dari semua hasil analisis.</p>
+        </div>
+    </section>
+
+    <section class="stats-grid">
+        <div class="stat-card primary"><span>Total Data</span><strong>{{ stats.total }}</strong></div>
+        <div class="stat-card positive"><span>Positif</span><strong>{{ stats.positif }}</strong></div>
+        <div class="stat-card neutral"><span>Netral</span><strong>{{ stats.netral }}</strong></div>
+        <div class="stat-card negative"><span>Negatif</span><strong>{{ stats.negatif }}</strong></div>
+        <div class="stat-card info"><span>Sentiment Score</span><strong>{{ sentiment_score }}</strong></div>
+        <div class="stat-card info"><span>Confidence Level</span><strong>{{ confidence_level }}</strong></div>
+    </section>
+
+    <section class="content-grid split">
+        <div class="panel">
+            <div class="panel-header">
+                <h2>Top Keyword Positif</h2>
+            </div>
+            <div class="keyword-cloud">
+                {% for item in positive_keywords %}
+                <span class="keyword-pill positive">{{ item.word }} <b>{{ item.count }}</b></span>
+                {% else %}
+                <div class="empty-state">Belum ada keyword positif.</div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="panel">
+            <div class="panel-header">
+                <h2>Top Keyword Negatif</h2>
+            </div>
+            <div class="keyword-cloud">
+                {% for item in negative_keywords %}
+                <span class="keyword-pill negative">{{ item.word }} <b>{{ item.count }}</b></span>
+                {% else %}
+                <div class="empty-state">Belum ada keyword negatif.</div>
+                {% endfor %}
+            </div>
+        </div>
+    </section>
+</div>
+{% endblock %}

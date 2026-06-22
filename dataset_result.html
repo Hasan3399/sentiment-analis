@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+
+{% block title %}Hasil Dataset{% endblock %}
+
+{% block content %}
+<div class="container-fluid page-container">
+    <section class="hero-panel compact">
+        <div>
+            <span class="eyebrow">Dataset Result</span>
+            <h1>{{ dataset.original_filename }}</h1>
+            <p>{{ stats.total }} komentar dianalisis dari kolom <strong>{{ dataset.text_column }}</strong>.</p>
+        </div>
+        <div class="model-status is-ready">
+            <span>Confidence Rata-rata</span>
+            <strong>{{ avg_confidence }}%</strong>
+            <small>Dataset preview</small>
+        </div>
+    </section>
+
+    <section class="stats-grid">
+        <div class="stat-card primary"><span>Total</span><strong>{{ stats.total }}</strong></div>
+        <div class="stat-card positive"><span>Positif</span><strong>{{ stats.positif }}</strong></div>
+        <div class="stat-card neutral"><span>Netral</span><strong>{{ stats.netral }}</strong></div>
+        <div class="stat-card negative"><span>Negatif</span><strong>{{ stats.negatif }}</strong></div>
+    </section>
+
+    <section class="panel">
+        <div class="panel-header">
+            <h2>Preview Hasil</h2>
+        </div>
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Text</th>
+                        <th>Sentimen</th>
+                        <th>Confidence</th>
+                        <th>Mode</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in results %}
+                    <tr>
+                        <td>{{ item.text }}</td>
+                        <td><span class="badge sentiment {{ item.sentiment|lower }}">{{ item.sentiment }}</span></td>
+                        <td>{{ item.confidence }}%</td>
+                        <td>{{ item.mode }}</td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="4" class="empty-cell">Belum ada hasil.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+</div>
+{% endblock %}

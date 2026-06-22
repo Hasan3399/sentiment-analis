@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+
+{% block title %}Visualisasi{% endblock %}
+
+{% block content %}
+<div class="container-fluid page-container">
+    <section class="hero-panel compact">
+        <div>
+            <span class="eyebrow">Visual Analytics</span>
+            <h1>Visualisasi Sentimen</h1>
+            <p>Lihat distribusi sentimen, top keywords, dan word cloud dari hasil analisis.</p>
+        </div>
+        <a class="btn btn-primary-gradient" href="{{ url_for('visualisasi') }}">Refresh Word Cloud</a>
+    </section>
+
+    <section class="stats-grid">
+        <div class="stat-card primary"><span>Total</span><strong>{{ stats.total }}</strong></div>
+        <div class="stat-card positive"><span>Positif</span><strong>{{ stats.positif }}</strong></div>
+        <div class="stat-card neutral"><span>Netral</span><strong>{{ stats.netral }}</strong></div>
+        <div class="stat-card negative"><span>Negatif</span><strong>{{ stats.negatif }}</strong></div>
+    </section>
+
+    <section class="content-grid split">
+        <div class="panel">
+            <div class="panel-header">
+                <h2>Distribusi Sentimen</h2>
+            </div>
+            <canvas id="visualChart" height="300"></canvas>
+        </div>
+
+        <div class="panel">
+            <div class="panel-header">
+                <h2>Top Keywords</h2>
+            </div>
+            <div class="keyword-cloud">
+                {% for item in keywords %}
+                <span class="keyword-pill {{ item.sentiment|lower }}">{{ item.word }} <b>{{ item.count }}</b></span>
+                {% else %}
+                <div class="empty-state">Belum ada keyword.</div>
+                {% endfor %}
+            </div>
+        </div>
+    </section>
+
+    <section class="panel mt-4">
+        <div class="panel-header">
+            <h2>Word Cloud</h2>
+            <a class="btn btn-sm btn-outline-light" href="{{ url_for('visualisasi') }}">Refresh</a>
+        </div>
+        {% if latest_wordcloud %}
+        <img class="wordcloud-img" src="{{ url_for('static', filename='uploads/wordcloud/' + latest_wordcloud) }}" alt="Word Cloud">
+        {% else %}
+        <div class="empty-state">Word cloud akan muncul setelah ada hasil analisis.</div>
+        {% endif %}
+    </section>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const stats = {{ stats|tojson }};
+const ctx = document.getElementById("visualChart");
+
+new Chart(ctx, {
+    type: "bar",
+    data: {
+        labels: ["Positif", "Netral", "Negatif"],
+        datasets: [{
+            label: "Jumlah Komentar",
+            data: [stats.positif, stats.netral, stats.negatif],
+            backgroundColor: ["#22c55e", "#60a5fa", "#ef4444"],
+            borderRadius: 14
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+            y: { beginAtZero: true, ticks: { color: "#cbd5e1" }, grid: { color: "rgba(148,163,184,0.12)" } },
+            x: { ticks: { color: "#cbd5e1" }, grid: { display: false } }
+        }
+    }
+});
+</script>
+{% endblock %}

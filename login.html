@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% block title %}Login Admin{% endblock %}
+
+{% block content %}
+<section class="auth-page">
+    <div class="auth-card">
+        <div class="auth-badge">Admin Access</div>
+        <h1>Login Dashboard</h1>
+        <p>Masuk untuk mengelola analisis sentimen IndoBERT.</p>
+
+        <form method="POST" class="auth-form">
+            <div class="mb-3">
+                <label class="form-label">Username</label>
+                <input type="text" class="form-control" name="username" required autofocus>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Password</label>
+                <input type="password" class="form-control" name="password" required>
+            </div>
+            <button class="btn btn-primary-gradient w-100" type="submit">Login</button>
+        </form>
+
+        <div class="auth-note">
+            Default login: <strong>admin</strong> / <strong>admin123</strong>. Ganti password di environment production.
+        </div>
+    </div>
+</section>
+{% endblock %}

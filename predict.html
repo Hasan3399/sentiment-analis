@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+
+{% block title %}Analisis Komentar{% endblock %}
+
+{% block content %}
+<div class="container-fluid page-container">
+    <section class="hero-panel compact">
+        <div>
+            <span class="eyebrow">Single Prediction</span>
+            <h1>Analisis Komentar</h1>
+            <p>Prediksi sentimen satu komentar menggunakan IndoBERT jika model aktif.</p>
+        </div>
+        <div class="model-status {{ 'is-ready' if model_ready else 'is-warning' }}">
+            <span>Mode</span>
+            <strong>{{ active_mode }}</strong>
+            <small>{{ 'Model siap' if model_ready else model_error or 'Fallback aktif' }}</small>
+        </div>
+    </section>
+
+    <section class="content-grid split">
+        <div class="panel">
+            <form method="POST" class="form-stack">
+                <label class="form-label">Komentar</label>
+                <textarea class="form-control textarea-lg" name="text" placeholder="Masukkan komentar..." required></textarea>
+                <div class="quick-chips">
+                    <button type="button" class="chip" data-fill="text">Produk bagus, pengiriman cepat.</button>
+                    <button type="button" class="chip" data-fill="text">Kecewa, barang datang rusak.</button>
+                    <button type="button" class="chip" data-fill="text">Lumayan, sesuai harga.</button>
+                </div>
+                <button class="btn btn-primary-gradient" type="submit">Analisis Sekarang</button>
+            </form>
+        </div>
+
+        <div class="panel">
+            <div class="panel-header">
+                <h2>Hasil Prediksi</h2>
+            </div>
+            {% if result %}
+            <div class="result-card sentiment-{{ result.sentiment|lower }}">
+                <div class="result-top">
+                    <div>
+                        <span>Sentimen</span>
+                        <strong>{{ result.sentiment }}</strong>
+                    </div>
+                    <div class="confidence-box">
+                        <span>{{ result.confidence }}%</span>
+                        <small>Confidence</small>
+                    </div>
+                </div>
+                <div class="confidence-track">
+                    <i style="width: {{ result.confidence }}%"></i>
+                </div>
+                <p class="result-text">{{ result.text }}</p>
+                <div class="result-meta">
+                    <span>Mode: {{ result.mode }}</span>
+                    <span>{{ result.created_at.strftime('%d/%m/%Y %H:%M') }}</span>
+                </div>
+                <div class="result-actions">
+                    <a class="btn btn-primary-gradient" href="{{ url_for('predict') }}">Analisis Komentar Lainnya</a>
+                </div>
+            </div>
+            {% else %}
+            <div class="empty-state">Belum ada hasil prediksi. Masukkan komentar untuk memulai.</div>
+            {% endif %}
+        </div>
+    </section>
+</div>
+{% endblock %}

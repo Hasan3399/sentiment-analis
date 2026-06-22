@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Indo Sentiment AI Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+<div class="page-shell">
+    <nav class="topbar">
+        <div class="container nav-container">
+            <div class="brand">
+                <span class="brand-icon">IS</span>
+                <div>
+                    <strong>Indo Sentiment AI</strong>
+                    <small>Dashboard analisis sentimen berbasis model Anda</small>
+                </div>
+            </div>
+
+            <div class="nav-actions">
+                <span class="runtime-badge {{ 'is-ready' if model_ready else 'is-demo' }}">
+                    {{ active_mode }}
+                </span>
+                <a class="ghost-btn" href="#upload">Upload CSV</a>
+            </div>
+        </div>
+    </nav>
+
+    <main class="container">
+        <section class="hero">
+            <div class="hero-copy">
+                <span class="eyebrow">Model-Powered Sentiment Dashboard</span>
+                <h1>Analisis sentimen komentar Indonesia dengan tampilan dashboard profesional.</h1>
+                <p>
+                    Gunakan model IndoBERT Anda untuk prediksi single text, batch text, upload CSV, export hasil,
+                    riwayat analisis, ringkasan insight, dan visualisasi distribusi sentimen.
+                    Analisis CSV dibatasi {{ max_analysis_rows }} baris agar tetap ringan.
+                </p>
+                <div class="hero-actions">
+                    <a class="primary-btn" href="#analyze">Mulai Analisis</a>
+                    <a class="secondary-btn" href="#insights">Lihat Insight</a>
+                </div>
+            </div>
+
+            <div class="hero-side">
+                <div class="orb-card">
+                    <span>Model Source</span>
+                    <strong>{{ model_name }}</strong>
+                    <small>{{ 'IndoBERT aktif' if model_ready else 'Mode fallback aktif' }}</small>
+                </div>
+                <div class="mini-metrics">
+                    <div>
+                        <span>Label</span>
+                        <strong>{{ model_label_count }}</strong>
+                    </div>
+                    <div>
+                        <span>Device</span>
+                        <strong>{{ 'GPU' if 'cuda' in device else 'CPU' }}</strong>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        {% if not model_ready %}
+        <div class="notice notice-warning">
+            <strong>Model belum aktif.</strong>
+            {{ model_error or 'File model belum valid.' }}
+            Dashboard tetap bisa digunakan dengan mode demo sampai IndoBERT berhasil dimuat.
+        </div>
+        {% endif %}
+
+        <section class="feature-grid">
+            <div class="feature-card">
+                <span class="feature-icon">01</span>
+                <strong>Single Prediction</strong>
+                <small>Prediksi satu komentar dengan confidence score.</small>
+            </div>
+            <div class="feature-card">
+                <span class="feature-icon">02</span>
+                <strong>Batch Analysis</strong>
+                <small>Analisis banyak komentar, satu baris per komentar.</small>
+            </div>
+            <div class="feature-card">
+                <span class="feature-icon">03</span>
+                <strong>CSV Upload</strong>
+                <small>Upload dataset CSV dan deteksi kolom komentar otomatis.</small>
+            </div>
+            <div class="feature-card">
+                <span class="feature-icon">04</span>
+                <strong>Smart Insight</strong>
+                <small>Ringkasan sentimen dominan, kata kunci, dan export CSV.</small>
+            </div>
+        </section>
+
+        <section class="stats-grid">
+            <div class="stat-card total">
+                <span>Total Data</span>
+                <strong>{{ chart_stats.total }}</strong>
+                <small>Dataset / hasil analisis</small>
+            </div>
+            <div class="stat-card positive">
+                <span>Positif</span>
+                <strong>{{ chart_stats.positif }}</strong>
+                <small>{{ ((chart_stats.positif / chart_stats.total * 100) if chart_stats.total else 0) | round(1) }}%</small>
+            </div>
+            <div class="stat-card neutral">
+                <span>Netral</span>
+                <strong>{{ chart_stats.netral }}</strong>
+                <small>{{ ((chart_stats.netral / chart_stats.total * 100) if chart_stats.total else 0) | round(1) }}%</small>
+            </div>
+            <div class="stat-card negative">
+                <span>Negatif</span>
+                <strong>{{ chart_stats.negatif }}</strong>
+                <small>{{ ((chart_stats.negatif / chart_stats.total * 100) if chart_stats.total else 0) | round(1) }}%</small>
+            </div>
+        </section>
+
+        <section class="content-grid">
+            <div class="panel" id="analyze">
+                <div class="panel-header">
+                    <div>
+                        <h2>Analisis Komentar</h2>
+                        <p>Prediksi sentimen dengan model IndoBERT jika sudah aktif.</p>
+                    </div>
+                    <span class="pill">{{ active_mode }}</span>
+                </div>
+
+                <form method="POST" class="analysis-form">
+                    <textarea
+                        class="form-control"
+                        rows="7"
+                        name="komentar"
+                        placeholder="Contoh: Pelayanan sangat cepat dan ramah, saya puas dengan hasilnya."
+                    ></textarea>
+
+                    <div class="quick-chips">
+                        <button type="button" class="chip" data-fill="komentar">Produk bagus, pengiriman cepat.</button>
+                        <button type="button" class="chip" data-fill="komentar">Kecewa, barang datang rusak.</button>
+                        <button type="button" class="chip" data-fill="komentar">Lumayan, sesuai harga.</button>
+                    </div>
+
+                    <button class="primary-btn" type="submit">Analisis Sekarang</button>
+                </form>
+
+                {% if prediction_error %}
+                <div class="notice notice-error">{{ prediction_error }}</div>
+                {% endif %}
+
+                {% if single_result %}
+                <div class="result-card sentiment-{{ single_result.label|lower|replace(' ', '-') }}">
+                    <div class="result-top">
+                        <div>
+                            <span>Sentimen Terdeteksi</span>
+                            <strong>{{ single_result.label }}</strong>
+                        </div>
+                        <div class="confidence-score">
+                            <span>{{ single_result.confidence }}%</span>
+                            <small>Confidence</small>
+                        </div>
+                    </div>
+
+                    <div class="confidence-bar">
+                        <i class="confidence-{{ ((single_result.confidence / 10) | int) * 10 }}"></i>
+                    </div>
+
+                    <div class="prob-list">
+                        {% for prob in single_result.label_probs[:3] %}
+                        <div class="prob-row">
+                            <span>{{ prob.label }}</span>
+                            <div class="mini-bar">
+                                <i style="width: {{ prob.confidence }}%"></i>
+                            </div>
+                            <strong>{{ prob.confidence }}%</strong>
+                        </div>
+                        {% endfor %}
+                    </div>
+
+                    <small>Mode: {{ single_result.mode }}</small>
+                </div>
+                {% else %}
+                <div class="empty-state">
+                    <strong>Belum ada hasil.</strong>
+                    <span>Masukkan komentar untuk melihat prediksi model.</span>
+                </div>
+                {% endif %}
+            </div>
+
+            <div class="panel chart-panel">
+                <div class="panel-header">
+                    <div>
+                        <h2>Distribusi Sentimen</h2>
+                        <p>Visualisasi proporsi sentimen dari data aktif.</p>
+                    </div>
+                </div>
+                <canvas id="sentimentChart"></canvas>
+                <div class="legend-grid">
+                    <div><span class="dot positive"></span>Positif: <strong>{{ chart_stats.positif }}</strong></div>
+                    <div><span class="dot neutral"></span>Netral: <strong>{{ chart_stats.netral }}</strong></div>
+                    <div><span class="dot negative"></span>Negatif: <strong>{{ chart_stats.negatif }}</strong></div>
+                </div>
+            </div>
+        </section>
+
+        {% if insights %}
+        <section class="insight-grid" id="insights">
+            <div class="panel">
+                <div class="panel-header">
+                    <div>
+                        <h2>Smart Insight</h2>
+                        <p>Ringkasan otomatis dari hasil analisis terbaru.</p>
+                    </div>
+                </div>
+
+                <div class="insight-cards">
+                    <div class="insight-card">
+                        <span>Sentimen Dominan</span>
+                        <strong>{{ insights.dominant_sentiment }}</strong>
+                    </div>
+                    <div class="insight-card">
+                        <span>Average Confidence</span>
+                        <strong>{{ insights.average_confidence }}%</strong>
+                    </div>
+                    <div class="insight-card">
+                        <span>Sentiment Score</span>
+                        <strong>{{ insights.sentiment_score }}</strong>
+                    </div>
+                    <div class="insight-card">
+                        <span>Confidence Level</span>
+                        <strong>{{ insights.confidence_level }}</strong>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-header">
+                    <div>
+                        <h2>Kata Kunci Sentimen</h2>
+                        <p>Kata positif dan negatif yang paling sering muncul.</p>
+                    </div>
+                </div>
+
+                <div class="keyword-columns">
+                    <div>
+                        <h3>Positif</h3>
+                        {% if insights.positive_keywords %}
+                            {% for item in insights.positive_keywords %}
+                            <div class="keyword-pill positive">{{ item.word }} <b>{{ item.count }}</b></div>
+                            {% endfor %}
+                        {% else %}
+                            <span class="muted-text">Belum ada kata positif terdeteksi.</span>
+                        {% endif %}
+                    </div>
+                    <div>
+                        <h3>Negatif</h3>
+                        {% if insights.negative_keywords %}
+                            {% for item in insights.negative_keywords %}
+                            <div class="keyword-pill negative">{{ item.word }} <b>{{ item.count }}</b></div>
+                            {% endfor %}
+                        {% else %}
+                            <span class="muted-text">Belum ada kata negatif terdeteksi.</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </section>
+        {% endif %}
+
+        <section class="panel">
+            <div class="panel-header">
+                <div>
+                    <h2>Batch Analysis</h2>
+                    <p>Analisis banyak komentar sekaligus. Tulis satu komentar per baris.</p>
+                </div>
+            </div>
+
+            {% if batch_error %}
+            <div class="notice notice-error">{{ batch_error }}</div>
+            {% endif %}
+
+            <form action="/batch" method="POST" class="batch-form">
+                <textarea
+                    class="form-control"
+                    rows="8"
+                    name="batch_text"
+                    placeholder="Produk sangat bagus&#10;Pengiriman lambat dan mengecewakan&#10;Lumayan sesuai harga"
+                ></textarea>
+                <button class="primary-btn" type="submit">Analisis Batch</button>
+            </form>
+
+            {% if batch_results %}
+            <div class="table-wrap">
+                <table class="preview-table">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Komentar</th>
+                            <th>Sentimen</th>
+                            <th>Confidence</th>
+                            <th>Mode</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in batch_results %}
+                        <tr>
+                            <td>{{ loop.index }}</td>
+                            <td>{{ item.text }}</td>
+                            <td><span class="badge sentiment-{{ item.label|lower|replace(' ', '-') }}">{{ item.label }}</span></td>
+                            <td>{{ item.confidence }}%</td>
+                            <td>{{ item.mode }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% endif %}
+        </section>
+
+        <section class="panel upload-panel" id="upload">
+            <div class="panel-header">
+                <div>
+                    <h2>Upload Dataset CSV</h2>
+                    <p>Analisis maksimal {{ max_analysis_rows }} baris pertama dari kolom komentar.</p>
+                </div>
+                {% if upload_results %}
+                <a class="secondary-btn" href="/download-results">Download CSV</a>
+                {% endif %}
+            </div>
+
+            {% if upload_message %}
+            <div class="notice notice-success">{{ upload_message }}</div>
+            {% endif %}
+
+            {% if upload_error %}
+            <div class="notice notice-error">{{ upload_error }}</div>
+            {% endif %}
+
+            <form
+                action="/upload"
+                method="POST"
+                enctype="multipart/form-data"
+                class="upload-form"
+            >
+                <input
+                    type="file"
+                    class="form-control"
+                    name="file"
+                    accept=".csv"
+                >
+                <button class="secondary-btn" type="submit">Upload dan Analisis</button>
+            </form>
+
+            {% if upload_preview %}
+            <div class="table-wrap">
+                <table class="preview-table">
+                    <thead>
+                        <tr>
+                            {% for column in upload_columns %}
+                            <th>{{ column }}</th>
+                            {% endfor %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in upload_preview %}
+                        <tr>
+                            {% for column in upload_columns %}
+                            <td>{{ row[column] }}</td>
+                            {% endfor %}
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% endif %}
+        </section>
+
+        <section class="panel history-panel">
+            <div class="panel-header">
+                <div>
+                    <h2>Riwayat Analisis</h2>
+                    <p>10 prediksi terakhir tersimpan di sesi browser.</p>
+                </div>
+            </div>
+
+            {% if history %}
+            <div class="history-list">
+                {% for item in history %}
+                <div class="history-item">
+                    <div>
+                        <strong>{{ item.label }}</strong>
+                        <small>{{ item.text }}</small>
+                    </div>
+                    <div class="history-meta">
+                        <span>{{ item.confidence }}%</span>
+                        <span>{{ item.time }}</span>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="empty-state">
+                <strong>Belum ada riwayat.</strong>
+                <span>Hasil prediksi akan muncul di sini.</span>
+            </div>
+            {% endif %}
+        </section>
+    </main>
+
+    <footer class="footer">
+        <span>Indo Sentiment AI Dashboard</span>
+        <small>Powered by your IndoBERT model</small>
+    </footer>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+const chartStats = {{ chart_stats|tojson }};
+const ctx = document.getElementById("sentimentChart");
+
+new Chart(ctx, {
+    type: "doughnut",
+    data: {
+        labels: ["Positif", "Netral", "Negatif"],
+        datasets: [{
+            data: [chartStats.positif, chartStats.netral, chartStats.negatif],
+            backgroundColor: ["#22c55e", "#60a5fa", "#ef4444"],
+            borderColor: "#0f172a",
+            borderWidth: 10,
+            hoverOffset: 10
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        cutout: "66%",
+        animation: {
+            animateScale: true,
+            animateRotate: true
+        },
+        plugins: {
+            legend: {
+                display: false
+            },
+            tooltip: {
+                callbacks: {
+                    label: function(context) {
+                        const value = context.raw;
+                        const total = chartStats.total || 1;
+                        const percentage = ((value / total) * 100).toFixed(1);
+                        return `${context.label}: ${value} (${percentage}%)`;
+                    }
+                }
+            }
+        }
+    }
+});
+
+document.querySelectorAll("[data-fill]").forEach(button => {
+    button.addEventListener("click", () => {
+        const targetName = button.getAttribute("data-fill");
+        const target = document.querySelector(`[name="${targetName}"]`);
+        if (target) {
+            target.value = button.textContent.trim();
+            target.focus();
+        }
+    });
+});
+</script>
+
+</body>
+</html>
